@@ -1,0 +1,866 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Loyalty Lens API Demo</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #f4f7fb;
+        color: #061225;
+      }
+
+      main {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 28px 18px 48px;
+      }
+
+      h1 {
+        margin: 0 0 8px;
+      }
+
+      section {
+        background: #fff;
+        border: 1px solid #dfe6ef;
+        border-radius: 12px;
+        padding: 24px;
+        margin-top: 18px;
+        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+      }
+
+      form {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 14px;
+      }
+
+      label {
+        display: grid;
+        gap: 6px;
+        font-weight: 700;
+        font-size: 14px;
+      }
+
+      input,
+      select,
+      button {
+        min-height: 38px;
+        border: 1px solid #ccd6e2;
+        border-radius: 6px;
+        padding: 8px 10px;
+        font: inherit;
+      }
+
+      button {
+        background: #2563eb;
+        color: #fff;
+        border: 0;
+        cursor: pointer;
+        font-weight: 700;
+      }
+
+      .wide {
+        grid-column: 1 / -1;
+      }
+
+      .result-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 28px;
+        margin-top: 24px;
+      }
+
+      .result-card {
+        background: #fff;
+        border: 1px solid #dfe6ef;
+        border-radius: 12px;
+        padding: 26px;
+        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+      }
+
+      .metric-box {
+        margin-top: 28px;
+        padding: 24px;
+        text-align: center;
+        border-radius: 10px;
+      }
+
+      .metric-box.low {
+        background: #ecfdf3;
+        border: 1px solid #6ee7a2;
+        color: #176b37;
+      }
+
+      .metric-box.high {
+        background: #fff1f2;
+        border: 1px solid #fca5a5;
+        color: #991b1b;
+      }
+
+      .metric-label {
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: 1.5px;
+      }
+
+      .metric-status {
+        margin: 20px 0;
+        font-size: 42px;
+        font-weight: 900;
+      }
+
+      .driver-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 42px;
+      }
+
+      .driver-badge {
+        background: #f1f5f9;
+        border: 1px solid #dbe3ec;
+        border-radius: 999px;
+        padding: 10px 16px;
+        color: #0f213d;
+      }
+
+      .full-card {
+        margin-top: 24px;
+      }
+
+      .bulk-stack {
+        display: grid;
+        gap: 20px;
+        margin-top: 24px;
+      }
+
+      .table-wrap {
+        position: relative;
+        margin-top: 18px;
+        overflow-x: auto;
+        border-radius: 8px;
+      }
+
+.scroll-frame {
+  max-height: 430px; /* keep v1 value */
+  overflow: auto;
+  border: 1px solid #2b3039;
+  background: #0d1118;
+
+  /* scrollbar from v2 */
+  border-radius: 8px;
+  scrollbar-color: #6b7280 #111827;
+  scrollbar-gutter: stable both-edges;
+  scrollbar-width: thin;
+}
+
+.scroll-frame.expanded {
+  max-height: calc(100vh - 130px);
+}
+
+.scroll-frame::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.scroll-frame::-webkit-scrollbar-track {
+  background: #111827;
+  border-radius: 999px;
+}
+
+.scroll-frame::-webkit-scrollbar-thumb {
+  background: #6b7280;
+  border: 3px solid #111827;
+  border-radius: 999px;
+}
+
+.scroll-frame::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+      .table-toolbar {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        display: flex;
+        gap: 6px;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+        z-index: 5;
+      }
+
+      .table-wrap:hover .table-toolbar,
+      .table-toolbar:focus-within {
+        opacity: 1;
+      }
+
+      .tool-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        min-height: 30px;
+        border: 1px solid #28303b;
+        border-radius: 8px;
+        background: #111827;
+        color: #e5edf8;
+        padding: 0;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.28);
+      }
+
+      .tool-button:hover {
+        background: #1f2937;
+      }
+
+      .tool-button svg {
+        width: 15px;
+        height: 15px;
+        stroke: currentColor;
+      }
+
+      table {
+        width: 100%;
+        min-width: 980px;
+        border-collapse: collapse;
+        background: #0d1118;
+        color: #fff;
+
+        font-size: 13px;
+      }
+
+      th,
+      td {
+        padding: 8px 10px;
+        border: 1px solid #2b3039;
+        text-align: left;
+        line-height: 1.25;
+      }
+
+      th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: #191e27;
+        color: #b8c0cc;
+        font-weight: 500;
+      }
+
+      td.number {
+        text-align: right;
+      }
+
+      .status-high {
+        color: #fecaca;
+        font-weight: 800;
+      }
+
+      .status-low {
+        color: #bbf7d0;
+        font-weight: 800;
+      }
+
+      .explanation-cell {
+        min-width: 340px; /* keep v1 width */
+        line-height: 1.35;
+      }
+
+      .modal {
+        position: fixed;
+        inset: 0;
+        display: none;
+        background: rgba(2, 6, 23, 0.72);
+        z-index: 50;
+        padding: 28px;
+      }
+
+      .modal.open {
+        display: block;
+      }
+
+      .modal-panel {
+        position: relative;
+        height: 100%;
+        background: #0d1118;
+        border-radius: 12px;
+        padding: 42px 12px 12px;
+        box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+      }
+
+      .modal-actions {
+        position: absolute;
+        top: 10px;
+        right: 12px;
+        display: flex;
+        gap: 8px;
+      }
+
+      .interpretation {
+        margin-top: 28px;
+        padding: 18px;
+        border-left: 4px solid #3b82f6;
+        border-radius: 8px;
+        background: #f8fafc;
+        line-height: 1.7;
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      .loading,
+      .error {
+        margin-top: 18px;
+        padding: 14px;
+        border-radius: 8px;
+      }
+
+      .loading {
+        background: #eff6ff;
+        color: #1d4ed8;
+      }
+
+      .error {
+        background: #fef2f2;
+        color: #991b1b;
+      }
+
+      @media (max-width: 760px) {
+        .result-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .metric-status {
+          font-size: 32px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Loyalty Lens Churn Prediction</h1>
+      <p>Simple API demo for manual prediction and CSV/XLSX bulk scoring.</p>
+
+      <section>
+        <h2>Manual Prediction</h2>
+        <form id="manual-form">
+          <label>Age <input name="age" type="number" min="0" max="100" value="35" required /></label>
+          <label>
+            Gender
+            <select name="gender">
+              <option>Male</option>
+              <option>Female</option>
+              <option>Other</option>
+            </select>
+          </label>
+          <label>
+            Subscription Type
+            <select name="subscription_type">
+              <option>Basic</option>
+              <option>Standard</option>
+              <option>Premium</option>
+            </select>
+          </label>
+          <label>Total Watch Hours <input name="watch_hours" type="number" min="0" step="0.01" value="12" required /></label>
+          <label>Days Since Last Login <input name="last_login_days" type="number" min="0" value="10" required /></label>
+          <label>
+            Device
+            <select name="device">
+              <option>Mobile</option>
+              <option>TV</option>
+              <option>Laptop</option>
+              <option>Tablet</option>
+              <option>Desktop</option>
+            </select>
+          </label>
+          <label>Monthly Fee <input name="monthly_fee" type="number" min="0" step="0.01" value="13.99" required /></label>
+          <label>
+            Payment Method
+            <select name="payment_method">
+              <option>Gift Card</option>
+              <option>Crypto</option>
+              <option>Debit Card</option>
+              <option>PayPal</option>
+              <option>Credit Card</option>
+            </select>
+          </label>
+          <label>Number of Profiles <input name="number_of_profiles" type="number" min="0" max="5" value="2" required /></label>
+          <label>Avg Watch Time Per Day <input name="avg_watch_time_per_day" type="number" min="0" step="0.01" value="1.2" required /></label>
+          <label>
+            Favorite Genre
+            <select name="favorite_genre">
+              <option>Action</option>
+              <option>Sci-Fi</option>
+              <option>Drama</option>
+              <option>Horror</option>
+              <option>Romance</option>
+              <option>Comedy</option>
+              <option>Documentary</option>
+            </select>
+          </label>
+          <button class="wide" type="submit">Predict Churn</button>
+        </form>
+        <div id="manual-result" class="hidden"></div>
+      </section>
+
+      <section>
+        <h2>Bulk Prediction</h2>
+        <form id="bulk-form">
+          <label class="wide">Upload CSV/XLSX <input name="file" type="file" accept=".csv,.xlsx,.xls" required /></label>
+          <button class="wide" type="submit">Run Bulk Prediction</button>
+        </form>
+        <div id="bulk-result" class="hidden"></div>
+      </section>
+    </main>
+
+    <div id="table-modal" class="modal">
+      <div class="modal-panel">
+        <div class="modal-actions">
+          <button class="tool-button" type="button" onclick="downloadBulkExcel()" title="Download XLSX" aria-label="Download XLSX">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <path d="M7 10l5 5 5-5"></path>
+              <path d="M12 15V3"></path>
+            </svg>
+          </button>
+          <button class="tool-button" type="button" onclick="closeExpandedTable()" title="Close" aria-label="Close expanded table">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+              <path d="M18 6 6 18"></path>
+              <path d="m6 6 12 12"></path>
+            </svg>
+          </button>
+        </div>
+        <div id="expanded-table"></div>
+      </div>
+    </div>
+
+    <script>
+      let latestBulkData = null;
+
+      function formToJson(form) {
+        const data = Object.fromEntries(new FormData(form).entries());
+        for (const key of ["age", "last_login_days", "number_of_profiles"]) {
+          data[key] = Number.parseInt(data[key], 10);
+        }
+        for (const key of ["watch_hours", "monthly_fee", "avg_watch_time_per_day"]) {
+          data[key] = Number.parseFloat(data[key]);
+        }
+        return data;
+      }
+
+      function percent(value) {
+        return `${(value * 100).toFixed(2)}%`;
+      }
+
+      function number(value) {
+        return Number(value).toFixed(4).replace(/0+$/, "").replace(/\.$/, "");
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function bulkInputColumns(records) {
+        return records.length
+          ? Object.keys(records[0]).filter(
+              (key) => !["row_number", "prediction", "status", "confidence", "churn_probability", "explanation"].includes(key)
+            )
+          : [];
+      }
+
+      function renderBulkTable(records, inputColumns, isExpanded = false) {
+        return `
+          <div class="table-wrap">
+            ${
+              isExpanded
+                ? ""
+                : `
+                  <div class="table-toolbar">
+                    <button class="tool-button" type="button" onclick="downloadBulkExcel()" title="Download XLSX" aria-label="Download XLSX">
+                      <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <path d="M7 10l5 5 5-5"></path>
+                        <path d="M12 15V3"></path>
+                      </svg>
+                    </button>
+                    <button class="tool-button" type="button" onclick="openExpandedTable()" title="Expand table" aria-label="Expand table">
+                      <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                        <path d="M15 3h6v6"></path>
+                        <path d="m21 3-7 7"></path>
+                        <path d="M9 21H3v-6"></path>
+                        <path d="m3 21 7-7"></path>
+                      </svg>
+                    </button>
+                  </div>
+                `
+            }
+            <div class="scroll-frame ${isExpanded ? "expanded" : ""}">
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    ${inputColumns.map((column) => `<th>${escapeHtml(column)}</th>`).join("")}
+                    <th>Prediction</th>
+                    <th>Churn Probability</th>
+                    <th>Explanation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${records
+                    .map(
+                      (record) => `
+                        <tr>
+                          <td class="number">${record.row_number}</td>
+                          ${inputColumns.map((column) => `<td>${escapeHtml(record[column] ?? "")}</td>`).join("")}
+                          <td class="${record.status === "HIGH CHURN RISK" ? "status-high" : "status-low"}">${escapeHtml(record.status)}</td>
+                          <td class="number">${number(record.churn_probability)}</td>
+                          <td class="explanation-cell">${escapeHtml(record.explanation)}</td>
+                        </tr>
+                      `
+                    )
+                    .join("")}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      }
+
+      function downloadBulkExcel() {
+        if (!latestBulkData) return;
+
+        const records = latestBulkData.records || [];
+        const inputColumns = bulkInputColumns(records);
+        const columns = ["row_number", ...inputColumns, "status", "churn_probability", "explanation"];
+        const headers = ["#", ...inputColumns, "Prediction", "Churn Probability", "Explanation"];
+        const rows = records.map((record) => columns.map((column) => record[column] ?? ""));
+        const blob = createXlsxBlob([headers, ...rows]);
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "loyalty_lens_bulk_results.xlsx";
+        link.click();
+        URL.revokeObjectURL(url);
+      }
+
+      function createXlsxBlob(rows) {
+        const files = {
+          "[Content_Types].xml": `<?xml version="1.0" encoding="UTF-8"?>
+            <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+              <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+              <Default Extension="xml" ContentType="application/xml"/>
+              <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+              <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+            </Types>`,
+          "_rels/.rels": `<?xml version="1.0" encoding="UTF-8"?>
+            <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+              <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+            </Relationships>`,
+          "xl/workbook.xml": `<?xml version="1.0" encoding="UTF-8"?>
+            <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+              xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+              <sheets><sheet name="Bulk Results" sheetId="1" r:id="rId1"/></sheets>
+            </workbook>`,
+          "xl/_rels/workbook.xml.rels": `<?xml version="1.0" encoding="UTF-8"?>
+            <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+              <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+            </Relationships>`,
+          "xl/worksheets/sheet1.xml": worksheetXml(rows),
+        };
+
+        return new Blob([zipFiles(files)], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+      }
+
+      function worksheetXml(rows) {
+        const sheetRows = rows
+          .map((row, rowIndex) => {
+            const cells = row
+              .map((value, colIndex) => {
+                const reference = `${columnName(colIndex + 1)}${rowIndex + 1}`;
+                if (typeof value === "number" && Number.isFinite(value)) {
+                  return `<c r="${reference}"><v>${value}</v></c>`;
+                }
+                return `<c r="${reference}" t="inlineStr"><is><t>${xmlEscape(value)}</t></is></c>`;
+              })
+              .join("");
+            return `<row r="${rowIndex + 1}">${cells}</row>`;
+          })
+          .join("");
+
+        return `<?xml version="1.0" encoding="UTF-8"?>
+          <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+            <sheetData>${sheetRows}</sheetData>
+          </worksheet>`;
+      }
+
+      function columnName(number) {
+        let name = "";
+        while (number > 0) {
+          const remainder = (number - 1) % 26;
+          name = String.fromCharCode(65 + remainder) + name;
+          number = Math.floor((number - 1) / 26);
+        }
+        return name;
+      }
+
+      function xmlEscape(value) {
+        return String(value ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&apos;");
+      }
+
+      function zipFiles(files) {
+        const encoder = new TextEncoder();
+        const localParts = [];
+        const centralParts = [];
+        let offset = 0;
+
+        for (const [name, content] of Object.entries(files)) {
+          const nameBytes = encoder.encode(name);
+          const dataBytes = encoder.encode(content);
+          const crc = crc32(dataBytes);
+
+          const localHeader = new Uint8Array(30 + nameBytes.length);
+          const localView = new DataView(localHeader.buffer);
+          localView.setUint32(0, 0x04034b50, true);
+          localView.setUint16(4, 20, true);
+          localView.setUint16(8, 0, true);
+          localView.setUint16(10, 0, true);
+          localView.setUint16(14, crc, true);
+          localView.setUint32(18, dataBytes.length, true);
+          localView.setUint32(22, dataBytes.length, true);
+          localView.setUint16(26, nameBytes.length, true);
+          localHeader.set(nameBytes, 30);
+          localParts.push(localHeader, dataBytes);
+
+          const centralHeader = new Uint8Array(46 + nameBytes.length);
+          const centralView = new DataView(centralHeader.buffer);
+          centralView.setUint32(0, 0x02014b50, true);
+          centralView.setUint16(4, 20, true);
+          centralView.setUint16(6, 20, true);
+          centralView.setUint16(10, 0, true);
+          centralView.setUint16(12, 0, true);
+          centralView.setUint16(16, crc, true);
+          centralView.setUint32(20, dataBytes.length, true);
+          centralView.setUint32(24, dataBytes.length, true);
+          centralView.setUint16(28, nameBytes.length, true);
+          centralView.setUint32(42, offset, true);
+          centralHeader.set(nameBytes, 46);
+          centralParts.push(centralHeader);
+
+          offset += localHeader.length + dataBytes.length;
+        }
+
+        const centralSize = centralParts.reduce((sum, part) => sum + part.length, 0);
+        const endRecord = new Uint8Array(22);
+        const endView = new DataView(endRecord.buffer);
+        endView.setUint32(0, 0x06054b50, true);
+        endView.setUint16(8, Object.keys(files).length, true);
+        endView.setUint16(10, Object.keys(files).length, true);
+        endView.setUint32(12, centralSize, true);
+        endView.setUint32(16, offset, true);
+
+        return concatUint8Arrays([...localParts, ...centralParts, endRecord]);
+      }
+
+      function concatUint8Arrays(parts) {
+        const totalLength = parts.reduce((sum, part) => sum + part.length, 0);
+        const result = new Uint8Array(totalLength);
+        let offset = 0;
+        for (const part of parts) {
+          result.set(part, offset);
+          offset += part.length;
+        }
+        return result;
+      }
+
+      function crc32(bytes) {
+        let crc = -1;
+        for (const byte of bytes) {
+          crc = (crc >>> 8) ^ crcTable[(crc ^ byte) & 255];
+        }
+        return (crc ^ -1) >>> 0;
+      }
+
+      const crcTable = (() => {
+        const table = new Uint32Array(256);
+        for (let index = 0; index < 256; index++) {
+          let value = index;
+          for (let bit = 0; bit < 8; bit++) {
+            value = value & 1 ? 0xedb88320 ^ (value >>> 1) : value >>> 1;
+          }
+          table[index] = value >>> 0;
+        }
+        return table;
+      })();
+
+      function openExpandedTable() {
+        if (!latestBulkData) return;
+
+        const records = latestBulkData.records || [];
+        document.querySelector("#expanded-table").innerHTML = renderBulkTable(records, bulkInputColumns(records), true);
+        document.querySelector("#table-modal").classList.add("open");
+      }
+
+      function closeExpandedTable() {
+        document.querySelector("#table-modal").classList.remove("open");
+      }
+
+      function renderManualResult(data) {
+        const isHighRisk = data.status === "HIGH CHURN RISK";
+        const cardClass = isHighRisk ? "high" : "low";
+        const driverTitle = isHighRisk ? "Primary Churn Drivers" : "Primary Retention Drivers";
+        const drivers = data.top_drivers || [];
+
+        return `
+          <div class="result-grid">
+            <div class="result-card">
+              <h3>Analysis Metrics</h3>
+              <div class="metric-box ${cardClass}">
+                <div class="metric-label">DIAGNOSTIC STATUS</div>
+                <div class="metric-status">${escapeHtml(data.status)}</div>
+                <div>Prediction Confidence: <strong>${percent(data.confidence)}</strong></div>
+              </div>
+            </div>
+
+            <div class="result-card">
+              <h3>${driverTitle}</h3>
+              <div class="driver-list">
+                ${drivers.map((driver) => `<span class="driver-badge">${escapeHtml(driver.feature)}</span>`).join("")}
+              </div>
+            </div>
+          </div>
+
+          <div class="result-card full-card">
+            <h3>Explainability Matrix</h3>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Feature Description</th>
+                  <th>Impact Direction</th>
+                  <th>Absolute Magnitude</th>
+                  <th>Raw Weight Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${drivers
+                  .map(
+                    (driver) => `
+                      <tr>
+                        <td>${escapeHtml(driver.feature)}</td>
+                        <td>${escapeHtml(driver.impact)}</td>
+                        <td class="number">${number(driver.absolute_magnitude)}</td>
+                        <td class="number">${number(driver.raw_weight_value)}</td>
+                      </tr>
+                    `
+                  )
+                  .join("")}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="result-card full-card">
+            <h3>XAI Interpretation</h3>
+            <div class="interpretation">${escapeHtml(data.explanation)}</div>
+          </div>
+        `;
+      }
+
+      function renderBulkResult(data) {
+        const records = data.records || [];
+        const inputColumns = bulkInputColumns(records);
+
+        return `
+          <div class="bulk-stack">
+            <div class="result-card">
+              <h3>Aggregate File Metrics</h3>
+              <div class="metric-box high">
+                <div class="metric-label">BATCH CHURN RATE</div>
+                <div class="metric-status">${percent(data.churn_rate)}</div>
+                <div>
+                  Total Records Checked: <strong>${data.total_records}</strong>
+                  |
+                  Likely Churned Profiles: <strong>${data.likely_churned_profiles}</strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="result-card">
+              <h3>Global XAi Churn Drivers across File</h3>
+              <div class="driver-list">
+                ${(data.global_top_drivers || [])
+                  .map((driver) => `<span class="driver-badge">${escapeHtml(driver.feature)}</span>`)
+                  .join("")}
+              </div>
+            </div>
+
+            <div class="result-card">
+              <h3>Processed Batch Output Results Matrix</h3>
+            </div>
+
+            ${renderBulkTable(records, inputColumns)}
+          </div>
+        `;
+      }
+
+      document.querySelector("#manual-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const result = document.querySelector("#manual-result");
+        result.className = "loading";
+        result.textContent = "Generating prediction...";
+        const response = await fetch("/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formToJson(event.currentTarget)),
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+          result.className = "error";
+          result.textContent = data.detail || "Prediction failed.";
+          return;
+        }
+
+        result.className = "";
+        result.innerHTML = renderManualResult(data);
+      });
+
+      document.querySelector("#bulk-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const result = document.querySelector("#bulk-result");
+        result.className = "loading";
+        result.textContent = "Processing file...";
+        const response = await fetch("/predict-bulk", {
+          method: "POST",
+          body: new FormData(event.currentTarget),
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+          result.className = "error";
+          result.textContent = data.detail || "Bulk prediction failed.";
+          return;
+        }
+
+        result.className = "";
+        latestBulkData = data;
+        result.innerHTML = renderBulkResult(data);
+      });
+    </script>
+  </body>
+</html>
