@@ -12,7 +12,7 @@
       /* ===== NAVBAR ===== */
       .nav { display:flex; align-items:center; justify-content:space-between; padding:14px 4%; background:#000; position:sticky; top:0; z-index:40; }
       .nav-left { display:flex; align-items:center; gap:36px; }
-      .logo { height:2rem; width:auto; display:block; }
+      .logo { height:2.5rem; width:auto; display:block; }
       .nav-tabs { display:flex; gap:22px; list-style:none; margin:0; padding:0; }
       .nav-tabs a { color:#e5e5e5; text-decoration:none; font-size:14px; font-weight:500; }
       .nav-tabs a:hover { color:#b3b3b3; }
@@ -111,8 +111,8 @@
       .hidden { display:none; }
 
       /* ===== FOOTER ===== */
-      footer { border-top:1px solid #222; margin-top:60px; padding:40px 4% 30px; color:#737373; max-width:1180px; margin-left:auto; margin-right:auto; font-size:13px; }
-      .footer-social { display:flex; gap:22px; margin-bottom:24px; }
+      footer { border-top:1px solid #222; padding:35px 4% 30px; color:#737373; max-width:1180px; margin-left:auto; margin-right:auto; font-size:13px; }
+      .footer-social { display:flex; gap:22px; margin-bottom:10px; }
       .footer-social a { color:#737373; }
       .footer-social svg { width:22px; height:22px; fill:currentColor; }
       .footer-links { display:grid; grid-template-columns:repeat(4,1fr); gap:14px 20px; }
@@ -137,8 +137,8 @@
       <div class="nav-left">
         <img src="/static/logo.png" alt="LoyaltyLens" class="logo" />
         <ul class="nav-tabs">
-          <li><a href="#" class="active">Home</a></li>
-          <li><a href="#">Dashboard</a></li>
+          <li><a href="#">Home</a></li>
+          <li><a href="#" class="active">Dashboard</a></li>
           <li><a href="#">About</a></li>
           <li><a href="#">Research</a></li>
           <li><a href="#">Help</a></li>
@@ -215,9 +215,8 @@
         <a href="#" aria-label="YouTube"><svg viewBox="0 0 24 24"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1 31 31 0 0 0 .5-5.8 31 31 0 0 0-.5-5.8zM9.6 15.6V8.4l6.2 3.6-6.2 3.6z"/></svg></a>
       </div>
       <div class="footer-links">
-        <a href="#">Audio Description</a><a href="#">Help Centre</a><a href="#">Gift Cards</a><a href="#">Media Centre</a>
-        <a href="#">Investor Relations</a><a href="#">Jobs</a><a href="#">Terms of Use</a><a href="#">Privacy</a>
-        <a href="#">Legal Notices</a><a href="#">Cookie Preferences</a><a href="#">Corporate Information</a><a href="#">Contact Us</a>
+        <a href="#">About Us</a><a href="#">Help Center</a><a href="#">Members</a><a href="#">Professor</a>
+        <a href="#">Documentation</a><a href="#">FAQ</a><a href="#">Contact Us</a>
       </div>
       <div class="footer-copy">© 2025-2026 LoyaltyLens</div>
     </footer>
@@ -442,6 +441,12 @@
         }
         toggle.addEventListener("click", (e) => { e.stopPropagation(); menu.classList.toggle("hidden"); });
         menu.addEventListener("click", (e) => { const li = e.target.closest("li[data-mode]"); if (!li) return; setMode(li.dataset.mode); menu.classList.add("hidden"); });
+        document.querySelectorAll(".nav-tabs a").forEach((link) => {
+          link.addEventListener("click", (e) => {
+            document.querySelectorAll(".nav-tabs a").forEach((l) => l.classList.remove("active"));
+            e.currentTarget.classList.add("active");
+          });
+        });
         if (browseBtn) browseBtn.addEventListener("click", (e) => { e.stopPropagation(); browseMenu.classList.toggle("hidden"); });
         document.addEventListener("click", () => { menu.classList.add("hidden"); if (browseMenu) browseMenu.classList.add("hidden"); });
         fileInput.addEventListener("change", () => { fileName.textContent = fileInput.files[0]?.name || ""; });
