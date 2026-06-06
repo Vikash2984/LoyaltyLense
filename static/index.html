@@ -36,12 +36,19 @@
 
       section { background:var(--panel); border:1px solid #1f1f1f; border-radius:8px; padding:clamp(14px,2.2vh,24px); margin-top:clamp(10px,1.8vh,18px); flex:1; display:flex; flex-direction:column; }
 
-      .mode-header { position:relative; display:inline-flex; align-items:center; gap:8px; }
+      .mode-header { display:inline-flex; align-items:center; gap:8px; }
+      /* New wrapper — makes the small ▼ button the anchor for the popup.
+         position:relative here means the absolute-positioned menu measures
+         its top/left from the button, not from the whole header row. */
+      .mode-toggle-wrap { position:relative; }
       .mode-header h2 { margin:0; font-size:22px; }
       .mode-toggle { background:transparent; border:0; color:#fff; cursor:pointer; font-size:14px; display:flex; align-items:center; gap:6px; padding:6px 8px; }
       .mode-toggle .caret { font-size:10px; }
-      .mode-menu { position:absolute; top:calc(100% + 14px); right:0; background:rgba(0,0,0,0.92); border:1px solid #282828; min-width:180px; max-width:calc(100vw - 32px); padding:10px 0; list-style:none; margin:0; z-index:20; box-shadow:0 3px 10px rgba(0,0,0,0.75); }
-      .mode-menu::before { content:""; position:absolute; top:-7px; right:14px; width:12px; height:12px; background:rgba(0,0,0,0.92); border-left:1px solid #282828; border-top:1px solid #282828; transform:rotate(45deg); }
+      /* left:50% + translateX(-50%) horizontally centres the bubble under the ▼ button.
+         To shift it left/right, adjust the translateX value — e.g. translateX(-30%) nudges it left. */
+      .mode-menu { position:absolute; top:calc(100% + 8px); left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.92); border:1px solid #282828; min-width:180px; max-width:calc(100vw - 32px); padding:10px 0; list-style:none; margin:0; z-index:20; box-shadow:0 3px 10px rgba(0,0,0,0.75); }
+      /* The ::before triangle arrow is also centred — left:50% + translateX(-50%) keeps it pointing straight up from the centre of the bubble */
+      .mode-menu::before { content:""; position:absolute; top:-7px; left:50%; width:12px; height:12px; background:rgba(0,0,0,0.92); border-left:1px solid #282828; border-top:1px solid #282828; transform:translateX(-50%) rotate(45deg); }
       .mode-menu li { padding:10px 16px; text-align:center; color:#b3b3b3; cursor:pointer; font-size:14px; }
       .mode-menu li:hover, .mode-menu li.active { color:#fff; }
 
@@ -104,8 +111,11 @@
       .error { background:rgba(229,9,20,0.15); color:#fca5a5; border:1px solid #7f1d1d; }
       .hidden { display:none; }
 
-      /* ===== FOOTER (full-width) ===== */
-      footer { border-top:1px solid #222; padding:clamp(16px,3vh,35px) 4% clamp(14px,2.5vh,30px); color:#737373; width:100%; font-size:13px; }
+      /* ===== FOOTER ===== */
+      /* max-width controls how wide the footer is — increase to widen, decrease to narrow.
+         margin:0 auto keeps it horizontally centred.
+         The clamp() on the horizontal padding gives breathing room on smaller screens. */
+      footer { border-top:1px solid #222; padding:clamp(16px,3vh,35px) clamp(18px,4%,48px) clamp(14px,2.5vh,30px); color:#737373; max-width:1175px; margin:0 auto; width:100%; font-size:13px; }
       .footer-social { display:flex; gap:22px; margin-bottom:clamp(6px,1vh,10px); font-size:17.5px; }
       .footer-social a { color:#e5e5e5; }
       .footer-links { display:grid; grid-template-columns:repeat(4,1fr); gap:14px 20px; }
@@ -158,11 +168,17 @@
       <section>
         <div class="mode-header">
           <h2 id="mode-title">Manual Prediction</h2>
-          <button type="button" class="mode-toggle" id="mode-toggle" aria-label="Switch prediction mode"><span class="caret">▼</span></button>
-          <ul class="mode-menu hidden" id="mode-menu">
-            <li data-mode="manual" class="active">Manual</li>
-            <li data-mode="bulk">Bulk</li>
-          </ul>
+          <!-- .mode-toggle-wrap is the new anchor for the popup menu.
+               Moving the button + menu inside this wrapper means position:absolute
+               on .mode-menu is relative to THIS small div, not the wide header row.
+               That is why the bubble now appears directly below the ▼ arrow. -->
+          <div class="mode-toggle-wrap">
+            <button type="button" class="mode-toggle" id="mode-toggle" aria-label="Switch prediction mode"><span class="caret">▼</span></button>
+            <ul class="mode-menu hidden" id="mode-menu">
+              <li data-mode="manual" class="active">Manual</li>
+              <li data-mode="bulk">Bulk</li>
+            </ul>
+          </div>
         </div>
 
         <form id="manual-form">
