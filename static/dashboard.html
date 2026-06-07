@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>Loyalty Lens</title>
+    <style>
+      :root { --bg:#000; --panel:#0a0a0a; --panel2:#141414; --border:#333; --muted:#8c8c8c; --text:#fff; --red:#e50914; --red-h:#f40612; }
+      * { box-sizing: border-box; }
+      body { margin:0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; flex-direction:column; overflow-x:hidden; }
+
+      /* ===== NAVBAR ===== */
+      .nav { display:flex; align-items:center; justify-content:space-between; padding:14px 4%; background:#000; position:sticky; top:0; z-index:40; }
+      .nav-left { display:flex; align-items:center; gap:36px; }
+      .logo { height:2.5rem; width:auto; display:block; }
+      .nav-tabs { display:flex; gap:22px; list-style:none; margin:0; padding:0; }
+      .nav-tabs a { color:#e5e5e5; text-decoration:none; font-size:14px; font-weight:500; }
+      .nav-tabs a:hover { color:#b3b3b3; }
+      .nav-tabs a.active { color:#fff; font-weight:700; }
+      .btn-red { background:var(--red); color:#fff; border:0; border-radius:4px; padding:5px 14px; font-weight:700; font-size:15px; cursor:pointer; white-space:nowrap; }
+      .btn-red:hover { background:var(--red-h); }
+      .browse-wrap { position:relative; display:none; }
+      .browse-btn { background:transparent; border:0; color:#fff; font-size:15px; font-weight:500; cursor:pointer; display:flex; align-items:center; gap:6px; padding:6px 8px; }
+      .browse-btn .caret { font-size:10px; }
+      .browse-menu { position:absolute; top:calc(100% + 14px); right:0; background:rgba(0,0,0,0.9); border:1px solid #282828; min-width:200px; max-width:calc(100vw - 24px); padding:10px 0; box-shadow:0 3px 10px rgba(0,0,0,0.75); }
+      .browse-menu::before { content:""; position:absolute; top:-7px; right:14px; width:12px; height:12px; background:rgba(0,0,0,0.9); border-left:1px solid #282828; border-top:1px solid #282828; transform:rotate(45deg); }
+      .browse-menu a { display:block; color:#b3b3b3; text-decoration:none; padding:10px 16px; text-align:center; font-size:14px; }
+      .browse-menu a:hover { color:#fff; }
+
+      .nav-divider { height:2px; background:linear-gradient(to right,#000,#e50914,#b81d24,#000); }
+
+      main { max-width:1180px; width:100%; margin:0 auto; padding:clamp(14px,2.4vh,28px) 18px clamp(20px,4vh,48px); flex:1; display:flex; flex-direction:column; min-width:0; }
+      h1 { margin:0 0 6px; font-size:32px; }
+      .subtitle { margin:0 0 18px; color:#b3b3b3; }
+
+      section { background:var(--panel); border:1px solid #1f1f1f; border-radius:8px; padding:clamp(14px,2.2vh,24px); margin-top:clamp(10px,1.8vh,18px); flex:1; display:flex; flex-direction:column; }
+
+      .mode-header { display:inline-flex; align-items:center; gap:8px; }
+      /* New wrapper — makes the small ▼ button the anchor for the popup.
+         position:relative here means the absolute-positioned menu measures
+         its top/left from the button, not from the whole header row. */
+      .mode-toggle-wrap { position:relative; }
+      .mode-header h2 { margin:0; font-size:22px; }
+      .mode-toggle { background:transparent; border:0; color:#fff; cursor:pointer; font-size:14px; display:flex; align-items:center; gap:6px; padding:6px 8px; }
+      .mode-toggle .caret { font-size:10px; }
+      /* left:50% + translateX(-50%) horizontally centres the bubble under the ▼ button.
+         To shift it left/right, adjust the translateX value — e.g. translateX(-30%) nudges it left. */
+      .mode-menu { position:absolute; top:calc(100% + 8px); left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.92); border:1px solid #282828; min-width:180px; max-width:calc(100vw - 32px); padding:10px 0; list-style:none; margin:0; z-index:20; box-shadow:0 3px 10px rgba(0,0,0,0.75); }
+      /* The ::before triangle arrow is also centred — left:50% + translateX(-50%) keeps it pointing straight up from the centre of the bubble */
+      .mode-menu::before { content:""; position:absolute; top:-7px; left:50%; width:12px; height:12px; background:rgba(0,0,0,0.92); border-left:1px solid #282828; border-top:1px solid #282828; transform:translateX(-50%) rotate(45deg); }
+      .mode-menu li { padding:10px 16px; text-align:center; color:#b3b3b3; cursor:pointer; font-size:14px; }
+      .mode-menu li:hover, .mode-menu li.active { color:#fff; }
+
+      form { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:clamp(8px,1.4vh,14px); margin-top:clamp(10px,1.8vh,18px); flex:1; align-content:space-evenly; }
+      label { display:grid; gap:6px; font-weight:600; font-size:13px; color:#b3b3b3; }
+      input, select { min-height:clamp(38px,5.2vh,46px); border:1px solid #5a5a5a; border-radius:4px; padding:10px 12px; font:inherit; background:#161616; color:#fff; }
+      input:focus, select:focus { outline:none; border-color:#fff; }
+      select option { background:#161616; color:#fff; }
+      button[type=submit] { min-height:clamp(40px,5.4vh,46px); background:var(--red); color:#fff; border:0; border-radius:4px; font-weight:700; font-size:16px; cursor:pointer; }
+      button[type=submit]:hover { background:var(--red-h); }
+      .wide { grid-column:1 / -1; }
+
+      .file-drop { border:2px dashed #5a5a5a; border-radius:8px; padding:40px 20px; text-align:center; background:#0f0f0f; }
+      .file-btn { display:inline-block; background:var(--red); color:#fff; font-weight:700; font-size:16px; padding:14px 38px; border-radius:4px; cursor:pointer; }
+      .file-btn:hover { background:var(--red-h); }
+      .file-hint { margin-top:12px; color:#8c8c8c; font-size:14px; }
+      .file-name { margin-top:8px; font-weight:700; color:#fff; font-size:14px; }
+
+      .result-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; margin-top:24px; }
+      .result-card { background:var(--panel2); border:1px solid #1f1f1f; border-radius:8px; padding:22px; }
+      .result-card h3 { margin-top:0; }
+      .metric-box { margin-top:20px; padding:22px; text-align:center; border-radius:8px; }
+      .metric-box.low { background:rgba(34,197,94,0.1); border:1px solid #166534; color:#86efac; }
+      .metric-box.high { background:rgba(229,9,20,0.1); border:1px solid #7f1d1d; color:#fca5a5; }
+      .metric-label { font-size:12px; font-weight:800; letter-spacing:1.5px; }
+      .metric-status { margin:18px 0; font-size:38px; font-weight:900; }
+      .driver-list { display:flex; flex-wrap:wrap; gap:10px; margin-top:20px; }
+      .driver-badge { background:#262626; border:1px solid #333; border-radius:999px; padding:8px 14px; color:#e5e5e5; font-size:13px; }
+      .full-card { margin-top:20px; }
+      .bulk-stack { display:grid; gap:18px; margin-top:24px; }
+      .interpretation { margin-top:18px; padding:16px; border-left:4px solid var(--red); border-radius:6px; background:#161616; color:#e5e5e5; line-height:1.7; }
+
+      .table-wrap { position:relative; margin-top:18px; overflow-x:auto; border-radius:8px; }
+      .scroll-frame { max-height:430px; overflow:auto; border:1px solid #2b3039; background:#0d1118; border-radius:8px; scrollbar-color:#6b7280 #111827; scrollbar-gutter:stable both-edges; scrollbar-width:thin; }
+      .scroll-frame.expanded { max-height:calc(100vh - 130px); }
+      .scroll-frame::-webkit-scrollbar { width:12px; height:12px; }
+      .scroll-frame::-webkit-scrollbar-track { background:#111827; border-radius:999px; }
+      .scroll-frame::-webkit-scrollbar-thumb { background:#6b7280; border:3px solid #111827; border-radius:999px; }
+      .scroll-frame::-webkit-scrollbar-thumb:hover { background:#9ca3af; }
+      .table-toolbar { position:absolute; top:10px; right:10px; display:flex; gap:6px; opacity:0; transition:opacity 0.2s; z-index:5; }
+      .table-wrap:hover .table-toolbar, .table-toolbar:focus-within { opacity:1; }
+      .tool-button { display:inline-flex; align-items:center; justify-content:center; width:30px; min-height:30px; border:1px solid #28303b; border-radius:8px; background:#111827; color:#e5edf8; padding:0; cursor:pointer; }
+      .tool-button:hover { background:#1f2937; }
+      .tool-button svg { width:15px; height:15px; stroke:currentColor; }
+      table { width:100%; min-width:980px; border-collapse:collapse; background:#0d1118; color:#fff; font-size:13px; }
+      th, td { padding:8px 10px; border:1px solid #2b3039; text-align:left; line-height:1.25; }
+      th { position:sticky; top:0; z-index:2; background:#191e27; color:#b8c0cc; font-weight:500; }
+      td.number { text-align:right; }
+      .status-high { color:#fecaca; font-weight:800; }
+      .status-low { color:#bbf7d0; font-weight:800; }
+      .explanation-cell { min-width:340px; line-height:1.35; }
+
+      .modal { position:fixed; inset:0; display:none; background:rgba(0,0,0,0.85); z-index:50; padding:28px; }
+      .modal.open { display:block; }
+      .modal-panel { position:relative; height:100%; background:#0d1118; border-radius:12px; padding:42px 12px 12px; box-shadow:0 18px 50px rgba(0,0,0,0.5); }
+      .modal-actions { position:absolute; top:10px; right:12px; display:flex; gap:8px; }
+
+      .loading, .error { margin-top:18px; padding:14px; border-radius:6px; }
+      .loading { background:#1e293b; color:#93c5fd; }
+      .error { background:rgba(229,9,20,0.15); color:#fca5a5; border:1px solid #7f1d1d; }
+      .hidden { display:none; }
+
+      /* ===== INTRO OVERLAY (same session rule as home) ===== */
+      #intro { position:fixed; inset:0; z-index:9999; background:#000; display:flex; align-items:center; justify-content:center; overflow:hidden; transition:opacity .5s ease; }
+      #intro.done { opacity:0; pointer-events:none; }
+      #intro netflixintro { --netflix-red:#e40913; --stage-size:clamp(180px,58vmin,360px); position:relative; display:block; width:var(--stage-size); height:var(--stage-size); animation:zoom-in 3.5s ease-in .5s forwards; }
+      #intro .l-vertical, #intro .l-base { position:absolute; display:block; background:var(--netflix-red); box-shadow:0 0 calc(var(--stage-size)*.08) rgba(228,9,19,.85); transform-origin:left bottom; }
+      #intro .l-vertical { left:28%; top:0; width:19%; height:82%; animation:paint-down 1.6s .2s both; }
+      #intro .l-base { left:28%; top:66%; width:50%; height:18%; animation:paint-right 1.6s .75s both; }
+      #intro .flare { position:absolute; inset:0; background:linear-gradient(90deg,transparent,#ffde01,transparent); opacity:0; mix-blend-mode:screen; animation:flare-pass 2.2s 1.1s forwards; }
+      @keyframes paint-down { from { transform:scaleY(0); } to { transform:scaleY(1); } }
+      @keyframes paint-right { from { transform:scaleX(0); } to { transform:scaleX(1); } }
+      @keyframes flare-pass { 0% { opacity:0; transform:translateX(-80%); } 30% { opacity:.9; } 100% { opacity:0; transform:translateX(80%); } }
+      @keyframes zoom-in { to { transform:scale(23.75); } }
+      @media (prefers-reduced-motion:reduce){ #intro netflixintro,#intro netflixintro * { animation-duration:.001s !important; animation-delay:0s !important; } }
+
+      /* ===== FOOTER ===== */
+      /* max-width controls how wide the footer is — increase to widen, decrease to narrow.
+         margin:0 auto keeps it horizontally centred.
+         The clamp() on the horizontal padding gives breathing room on smaller screens. */
+      footer { border-top:1px solid #222; padding:clamp(16px,3vh,35px) clamp(18px,4%,48px) clamp(14px,2.5vh,30px); color:#737373; max-width:1175px; margin:0 auto; width:100%; font-size:13px; }
+      .footer-social { display:flex; gap:22px; margin-bottom:clamp(6px,1vh,10px); font-size:17.5px; }
+      .footer-social a { color:#e5e5e5; }
+      .footer-links { display:grid; grid-template-columns:repeat(4,1fr); gap:14px 20px; }
+      .footer-links a { color:#737373; text-decoration:none; font-size:13px; }
+      .footer-links a:hover { text-decoration:underline; }
+      .footer-copy { margin-top:clamp(12px,2vh,24px); font-size:12px; }
+
+      @media (max-width: 880px) {
+        .nav { padding:12px 16px; gap:8px; }
+        .nav-left { gap:4px; min-width:0; flex:1; }
+        .logo { height:2rem; }
+        .nav-tabs { display:none; }
+        .browse-wrap { display:block; }
+        .footer-links { grid-template-columns:repeat(2,1fr); }
+        .result-grid { grid-template-columns:1fr; }
+        .metric-status { font-size:30px; }
+        h1 { font-size:24px; }
+      }
+      @media (max-width: 380px) {
+        .nav { padding:10px 12px; }
+        .logo { height:1.7rem; }
+        .browse-btn { font-size:14px; padding:6px 4px; }
+        .btn-red { padding:5px 10px; font-size:14px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="intro" aria-hidden="true">
+      <netflixintro letter="L">
+        <span class="l-vertical"></span>
+        <span class="l-base"></span>
+        <span class="flare"></span>
+      </netflixintro>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-left">
+        <a href="/home"><img src="/static/logo.png" alt="LoyaltyLens" class="logo" /></a>
+        <ul class="nav-tabs">
+          <li><a href="/home">Home</a></li>
+          <li><a href="/dashboard" class="active">Dashboard</a></li>
+          <li><a href="#">About</a></li>
+          <li><a href="#">Research</a></li>
+          <li><a href="#">Help</a></li>
+        </ul>
+        <div class="browse-wrap">
+          <button class="browse-btn" id="browse-btn" type="button">Browse <span class="caret">▼</span></button>
+          <div class="browse-menu hidden" id="browse-menu">
+            <a href="/home">Home</a><a href="/dashboard">Dashboard</a><a href="#">About</a><a href="#">Research</a><a href="#">Help</a>
+          </div>
+        </div>
+      </div>
+      <button class="btn-red" id="signout-btn" type="button">Sign Out</button>
+    </nav>
+    <div class="nav-divider"></div>
+
+    <main>
+      <section>
+        <div class="mode-header">
+          <h2 id="mode-title">Manual Prediction</h2>
+          <!-- .mode-toggle-wrap is the new anchor for the popup menu.
+               Moving the button + menu inside this wrapper means position:absolute
+               on .mode-menu is relative to THIS small div, not the wide header row.
+               That is why the bubble now appears directly below the ▼ arrow. -->
+          <div class="mode-toggle-wrap">
+            <button type="button" class="mode-toggle" id="mode-toggle" aria-label="Switch prediction mode"><span class="caret">▼</span></button>
+            <ul class="mode-menu hidden" id="mode-menu">
+              <li data-mode="manual" class="active">Manual</li>
+              <li data-mode="bulk">Bulk</li>
+            </ul>
+          </div>
+        </div>
+
+        <form id="manual-form">
+          <label>Age <input name="age" type="number" min="0" max="100" value="35" required /></label>
+          <label>Gender
+            <select name="gender"><option>Male</option><option>Female</option><option>Other</option></select>
+          </label>
+          <label>Subscription Type
+            <select name="subscription_type"><option>Basic</option><option>Standard</option><option>Premium</option></select>
+          </label>
+          <label>Total Watch Hours <input name="watch_hours" type="number" min="0" step="0.01" value="12" required /></label>
+          <label>Days Since Last Login <input name="last_login_days" type="number" min="0" value="10" required /></label>
+          <label>Device
+            <select name="device"><option>Mobile</option><option>TV</option><option>Laptop</option><option>Tablet</option><option>Desktop</option></select>
+          </label>
+          <label>Monthly Fee <input name="monthly_fee" type="number" min="0" step="0.01" value="13.99" required /></label>
+          <label>Payment Method
+            <select name="payment_method"><option>Gift Card</option><option>Crypto</option><option>Debit Card</option><option>PayPal</option><option>Credit Card</option></select>
+          </label>
+          <label>Number of Profiles <input name="number_of_profiles" type="number" min="0" max="5" value="2" required /></label>
+          <label>Avg Watch Time Per Day <input name="avg_watch_time_per_day" type="number" min="0" step="0.01" value="1.2" required /></label>
+          <label>Favorite Genre
+            <select name="favorite_genre"><option>Action</option><option>Sci-Fi</option><option>Drama</option><option>Horror</option><option>Romance</option><option>Comedy</option><option>Documentary</option></select>
+          </label>
+          <button class="wide" type="submit">Predict Churn</button>
+        </form>
+        <div id="manual-result" class="hidden"></div>
+
+        <form id="bulk-form" class="hidden">
+          <div class="file-drop wide">
+            <label class="file-btn" for="bulk-file-input">Select File</label>
+            <input id="bulk-file-input" name="file" type="file" accept=".csv,.xlsx,.xls" required style="display:none" />
+            <div class="file-hint">or drop CSV / XLSX here</div>
+            <div class="file-name" id="bulk-file-name"></div>
+          </div>
+          <button class="wide" type="submit">Predict Churn</button>
+        </form>
+        <div id="bulk-result" class="hidden"></div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="footer-social">
+        <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+        <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+        <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+        <a href="#" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+      </div>
+      <div class="footer-links">
+        <a href="#">About Us</a><a href="#">Help Center</a><a href="#">Members</a><a href="#">Professor</a>
+        <a href="#">Documentation</a><a href="#">FAQ</a><a href="#">Contact Us</a>
+      </div>
+      <div class="footer-copy">© 2025-2026 LoyaltyLens</div>
+    </footer>
+
+    <div id="table-modal" class="modal">
+      <div class="modal-panel">
+        <div class="modal-actions">
+          <button class="tool-button" type="button" onclick="downloadBulkExcel()" title="Download XLSX" aria-label="Download XLSX">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10l5 5 5-5"></path><path d="M12 15V3"></path></svg>
+          </button>
+          <button class="tool-button" type="button" onclick="closeExpandedTable()" title="Close" aria-label="Close expanded table">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+          </button>
+        </div>
+        <div id="expanded-table"></div>
+      </div>
+    </div>
+
+    <script>
+      let latestBulkData = null;
+
+      (function(){
+        const intro = document.getElementById('intro');
+        if (!intro) return;
+        const played = sessionStorage.getItem('introPlayed');
+        const isReload = performance.getEntriesByType('navigation')[0]?.type === 'reload';
+        if (played || isReload) { intro.remove(); return; }
+        sessionStorage.setItem('introPlayed', '1');
+        setTimeout(() => intro.classList.add('done'), 3600);
+        setTimeout(() => intro.remove(), 4200);
+      })();
+
+      document.getElementById('signout-btn').addEventListener('click', async () => {
+        await fetch('/auth/signout', { method:'POST' });
+        location.href = '/';
+      });
+
+      fetch('/auth/me')
+        .then((response) => response.ok ? response.json() : { user:null })
+        .then((data) => { if (!data.user) location.href = '/signin'; })
+        .catch(() => { location.href = '/signin'; });
+
+      function formToJson(form) {
+        const data = Object.fromEntries(new FormData(form).entries());
+        for (const key of ["age", "last_login_days", "number_of_profiles"]) data[key] = Number.parseInt(data[key], 10);
+        for (const key of ["watch_hours", "monthly_fee", "avg_watch_time_per_day"]) data[key] = Number.parseFloat(data[key]);
+        return data;
+      }
+      function percent(value) { return `${(value * 100).toFixed(2)}%`; }
+      function number(value) { return Number(value).toFixed(4).replace(/0+$/, "").replace(/\.$/, ""); }
+      function escapeHtml(value) {
+        return String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
+      }
+      function bulkInputColumns(records) {
+        return records.length ? Object.keys(records[0]).filter((key) => !["row_number", "prediction", "status", "confidence", "churn_probability", "explanation"].includes(key)) : [];
+      }
+
+      function renderBulkTable(records, inputColumns, isExpanded = false) {
+        return `
+          <div class="table-wrap">
+            ${isExpanded ? "" : `
+              <div class="table-toolbar">
+                <button class="tool-button" type="button" onclick="downloadBulkExcel()" title="Download XLSX" aria-label="Download XLSX">
+                  <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10l5 5 5-5"></path><path d="M12 15V3"></path></svg>
+                </button>
+                <button class="tool-button" type="button" onclick="openExpandedTable()" title="Expand table" aria-label="Expand table">
+                  <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M15 3h6v6"></path><path d="m21 3-7 7"></path><path d="M9 21H3v-6"></path><path d="m3 21 7-7"></path></svg>
+                </button>
+              </div>`}
+            <div class="scroll-frame ${isExpanded ? "expanded" : ""}">
+              <table>
+                <thead><tr><th>#</th>${inputColumns.map((c) => `<th>${escapeHtml(c)}</th>`).join("")}<th>Prediction</th><th>Churn Probability</th><th>Explanation</th></tr></thead>
+                <tbody>
+                  ${records.map((record) => `
+                    <tr>
+                      <td class="number">${record.row_number}</td>
+                      ${inputColumns.map((c) => `<td>${escapeHtml(record[c] ?? "")}</td>`).join("")}
+                      <td class="${record.status === "HIGH CHURN RISK" ? "status-high" : "status-low"}">${escapeHtml(record.status)}</td>
+                      <td class="number">${number(record.churn_probability)}</td>
+                      <td class="explanation-cell">${escapeHtml(record.explanation)}</td>
+                    </tr>`).join("")}
+                </tbody>
+              </table>
+            </div>
+          </div>`;
+      }
+
+      function downloadBulkExcel() {
+        if (!latestBulkData) return;
+        const records = latestBulkData.records || [];
+        const inputColumns = bulkInputColumns(records);
+        const columns = ["row_number", ...inputColumns, "status", "churn_probability", "explanation"];
+        const headers = ["#", ...inputColumns, "Prediction", "Churn Probability", "Explanation"];
+        const rows = records.map((r) => columns.map((c) => r[c] ?? ""));
+        const blob = createXlsxBlob([headers, ...rows]);
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url; link.download = "loyalty_lens_bulk_results.xlsx"; link.click();
+        URL.revokeObjectURL(url);
+      }
+
+      function createXlsxBlob(rows) {
+        const files = {
+          "[Content_Types].xml": `<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>`,
+          "_rels/.rels": `<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`,
+          "xl/workbook.xml": `<?xml version="1.0" encoding="UTF-8"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Bulk Results" sheetId="1" r:id="rId1"/></sheets></workbook>`,
+          "xl/_rels/workbook.xml.rels": `<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>`,
+          "xl/worksheets/sheet1.xml": worksheetXml(rows),
+        };
+        return new Blob([zipFiles(files)], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      }
+      function worksheetXml(rows) {
+        const sheetRows = rows.map((row, rowIndex) => {
+          const cells = row.map((value, colIndex) => {
+            const ref = `${columnName(colIndex + 1)}${rowIndex + 1}`;
+            if (typeof value === "number" && Number.isFinite(value)) return `<c r="${ref}"><v>${value}</v></c>`;
+            return `<c r="${ref}" t="inlineStr"><is><t>${xmlEscape(value)}</t></is></c>`;
+          }).join("");
+          return `<row r="${rowIndex + 1}">${cells}</row>`;
+        }).join("");
+        return `<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>${sheetRows}</sheetData></worksheet>`;
+      }
+      function columnName(number) { let name = ""; while (number > 0) { const r = (number - 1) % 26; name = String.fromCharCode(65 + r) + name; number = Math.floor((number - 1) / 26); } return name; }
+      function xmlEscape(value) { return String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&apos;"); }
+      function zipFiles(files) {
+        const encoder = new TextEncoder(); const localParts = []; const centralParts = []; let offset = 0;
+        for (const [name, content] of Object.entries(files)) {
+          const nameBytes = encoder.encode(name); const dataBytes = encoder.encode(content); const crc = crc32(dataBytes);
+          const lh = new Uint8Array(30 + nameBytes.length); const lv = new DataView(lh.buffer);
+          lv.setUint32(0, 0x04034b50, true); lv.setUint16(4, 20, true); lv.setUint16(8, 0, true); lv.setUint16(10, 0, true);
+          lv.setUint16(14, crc, true); lv.setUint32(18, dataBytes.length, true); lv.setUint32(22, dataBytes.length, true); lv.setUint16(26, nameBytes.length, true);
+          lh.set(nameBytes, 30); localParts.push(lh, dataBytes);
+          const ch = new Uint8Array(46 + nameBytes.length); const cv = new DataView(ch.buffer);
+          cv.setUint32(0, 0x02014b50, true); cv.setUint16(4, 20, true); cv.setUint16(6, 20, true); cv.setUint16(10, 0, true); cv.setUint16(12, 0, true);
+          cv.setUint16(16, crc, true); cv.setUint32(20, dataBytes.length, true); cv.setUint32(24, dataBytes.length, true); cv.setUint16(28, nameBytes.length, true); cv.setUint32(42, offset, true);
+          ch.set(nameBytes, 46); centralParts.push(ch); offset += lh.length + dataBytes.length;
+        }
+        const centralSize = centralParts.reduce((s, p) => s + p.length, 0);
+        const er = new Uint8Array(22); const ev = new DataView(er.buffer);
+        ev.setUint32(0, 0x06054b50, true); ev.setUint16(8, Object.keys(files).length, true); ev.setUint16(10, Object.keys(files).length, true); ev.setUint32(12, centralSize, true); ev.setUint32(16, offset, true);
+        return concatUint8Arrays([...localParts, ...centralParts, er]);
+      }
+      function concatUint8Arrays(parts) { const t = parts.reduce((s, p) => s + p.length, 0); const r = new Uint8Array(t); let o = 0; for (const p of parts) { r.set(p, o); o += p.length; } return r; }
+      function crc32(bytes) { let crc = -1; for (const b of bytes) crc = (crc >>> 8) ^ crcTable[(crc ^ b) & 255]; return (crc ^ -1) >>> 0; }
+      const crcTable = (() => { const t = new Uint32Array(256); for (let i = 0; i < 256; i++) { let v = i; for (let b = 0; b < 8; b++) v = v & 1 ? 0xedb88320 ^ (v >>> 1) : v >>> 1; t[i] = v >>> 0; } return t; })();
+
+      function openExpandedTable() {
+        if (!latestBulkData) return;
+        const records = latestBulkData.records || [];
+        document.querySelector("#expanded-table").innerHTML = renderBulkTable(records, bulkInputColumns(records), true);
+        document.querySelector("#table-modal").classList.add("open");
+      }
+      function closeExpandedTable() { document.querySelector("#table-modal").classList.remove("open"); }
+
+      function renderManualResult(data) {
+        const isHighRisk = data.status === "HIGH CHURN RISK";
+        const cardClass = isHighRisk ? "high" : "low";
+        const driverTitle = isHighRisk ? "Primary Churn Drivers" : "Primary Retention Drivers";
+        const drivers = data.top_drivers || [];
+        return `
+          <div class="result-grid">
+            <div class="result-card"><h3>Analysis Metrics</h3>
+              <div class="metric-box ${cardClass}">
+                <div class="metric-label">DIAGNOSTIC STATUS</div>
+                <div class="metric-status">${escapeHtml(data.status)}</div>
+                <div>Prediction Confidence: <strong>${percent(data.confidence)}</strong></div>
+              </div></div>
+            <div class="result-card"><h3>${driverTitle}</h3>
+              <div class="driver-list">${drivers.map((d) => `<span class="driver-badge">${escapeHtml(d.feature)}</span>`).join("")}</div>
+            </div>
+          </div>
+          <div class="result-card full-card"><h3>Explainability Matrix</h3></div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Feature Description</th><th>Impact Direction</th><th>Absolute Magnitude</th><th>Raw Weight Value</th></tr></thead>
+            <tbody>${drivers.map((d) => `<tr><td>${escapeHtml(d.feature)}</td><td>${escapeHtml(d.impact)}</td><td class="number">${number(d.absolute_magnitude)}</td><td class="number">${number(d.raw_weight_value)}</td></tr>`).join("")}</tbody>
+          </table></div>
+          <div class="result-card full-card"><h3>XAI Interpretation</h3>
+            <div class="interpretation">${escapeHtml(data.explanation)}</div>
+          </div>`;
+      }
+
+      function renderBulkResult(data) {
+        const records = data.records || [];
+        const inputColumns = bulkInputColumns(records);
+        return `
+          <div class="bulk-stack">
+            <div class="result-card"><h3>Aggregate File Metrics</h3>
+              <div class="metric-box high">
+                <div class="metric-label">BATCH CHURN RATE</div>
+                <div class="metric-status">${percent(data.churn_rate)}</div>
+                <div>Total Records Checked: <strong>${data.total_records}</strong> | Likely Churned Profiles: <strong>${data.likely_churned_profiles}</strong></div>
+              </div></div>
+            <div class="result-card"><h3>Global XAi Churn Drivers across File</h3>
+              <div class="driver-list">${(data.global_top_drivers || []).map((d) => `<span class="driver-badge">${escapeHtml(d.feature)}</span>`).join("")}</div>
+            </div>
+            <div class="result-card"><h3>Processed Batch Output Results Matrix</h3></div>
+            ${renderBulkTable(records, inputColumns)}
+          </div>`;
+      }
+
+      document.querySelector("#manual-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const result = document.querySelector("#manual-result");
+        result.className = "loading"; result.textContent = "Generating prediction...";
+        const response = await fetch("/predict", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(formToJson(event.currentTarget)) });
+        const data = await response.json();
+        if (!response.ok) { result.className = "error"; result.textContent = data.detail || "Prediction failed."; return; }
+        result.className = ""; result.innerHTML = renderManualResult(data);
+      });
+
+      document.querySelector("#bulk-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const result = document.querySelector("#bulk-result");
+        result.className = "loading"; result.textContent = "Processing file...";
+        const response = await fetch("/predict-bulk", { method: "POST", body: new FormData(event.currentTarget) });
+        const data = await response.json();
+        if (!response.ok) { result.className = "error"; result.textContent = data.detail || "Bulk prediction failed."; return; }
+        result.className = ""; latestBulkData = data; result.innerHTML = renderBulkResult(data);
+      });
+
+      (function () {
+        const toggle = document.querySelector("#mode-toggle");
+        const menu = document.querySelector("#mode-menu");
+        const title = document.querySelector("#mode-title");
+        const manualForm = document.querySelector("#manual-form");
+        const bulkForm = document.querySelector("#bulk-form");
+        const manualResult = document.querySelector("#manual-result");
+        const bulkResult = document.querySelector("#bulk-result");
+        const fileInput = document.querySelector("#bulk-file-input");
+        const fileName = document.querySelector("#bulk-file-name");
+        const drop = document.querySelector(".file-drop");
+        const browseBtn = document.querySelector("#browse-btn");
+        const browseMenu = document.querySelector("#browse-menu");
+
+        function setMode(mode) {
+          const isManual = mode === "manual";
+          title.textContent = isManual ? "Manual Prediction" : "Bulk Prediction";
+          manualForm.classList.toggle("hidden", !isManual);
+          bulkForm.classList.toggle("hidden", isManual);
+          manualResult.classList.add("hidden");
+          bulkResult.classList.add("hidden");
+          menu.querySelectorAll("li").forEach((li) => li.classList.toggle("active", li.dataset.mode === mode));
+        }
+        toggle.addEventListener("click", (e) => { e.stopPropagation(); menu.classList.toggle("hidden"); });
+        menu.addEventListener("click", (e) => { const li = e.target.closest("li[data-mode]"); if (!li) return; setMode(li.dataset.mode); menu.classList.add("hidden"); });
+        document.querySelectorAll(".nav-tabs a").forEach((link) => {
+          link.addEventListener("click", (e) => {
+            document.querySelectorAll(".nav-tabs a").forEach((l) => l.classList.remove("active"));
+            e.currentTarget.classList.add("active");
+          });
+        });
+        if (browseBtn) browseBtn.addEventListener("click", (e) => { e.stopPropagation(); browseMenu.classList.toggle("hidden"); });
+        document.addEventListener("click", () => { menu.classList.add("hidden"); if (browseMenu) browseMenu.classList.add("hidden"); });
+        fileInput.addEventListener("change", () => { fileName.textContent = fileInput.files[0]?.name || ""; });
+        ["dragover","dragenter"].forEach(ev => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.style.background = "#1a1a1a"; }));
+        ["dragleave","drop"].forEach(ev => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.style.background = "#0f0f0f"; }));
+        drop.addEventListener("drop", (e) => { if (e.dataTransfer.files[0]) { fileInput.files = e.dataTransfer.files; fileName.textContent = e.dataTransfer.files[0].name; } });
+      })();
+    </script>
+  </body>
+</html>
+

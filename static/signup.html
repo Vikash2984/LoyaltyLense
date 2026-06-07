@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>Sign Up · Loyalty Lens</title>
+    <style>
+      :root { --bg:#000; --panel:#0a0a0a; --panel2:#141414; --border:#333; --muted:#8c8c8c; --text:#fff; --red:#e50914; --red-h:#f40612; }
+      * { box-sizing: border-box; }
+      body { margin:0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; flex-direction:column; overflow-x:hidden; }
+
+      /* ===== NAVBAR (identical sizing to dashboard) ===== */
+      .nav { display:flex; align-items:center; justify-content:space-between; padding:14px 4%; background:#000; position:sticky; top:0; z-index:40; }
+      .nav-left { display:flex; align-items:center; gap:36px; }
+      .logo { height:2.5rem; width:auto; display:block; }
+      .nav-divider { height:1px; background:#222; }
+
+      main { max-width:1180px; width:100%; margin:0 auto; padding:clamp(14px,2.4vh,28px) 18px clamp(20px,4vh,48px); flex:1; display:flex; flex-direction:column; min-width:0; align-items:center; justify-content:center; }
+
+      /* ===== SIGN-IN CARD ===== */
+      .signin { width:100%; max-width:440px; }
+      .signin h1 { margin:0 0 8px; font-size:25.31px; font-weight:800; }
+      .signin .subtitle { margin:0 0 26px; color:#b3b3b3; font-size:15px; }
+
+      .field { position:relative; margin-bottom:16px; }
+      .field input { width:100%; height:56px; background:#161616; border:1px solid #333; border-radius:4px; color:#fff; font:inherit; font-size:16px; padding:22px 44px 6px 14px; outline:none; transition:border-color .15s; }
+      .field input:focus, .field input:not(:placeholder-shown) { border-color:#454545; }
+      .field input:-webkit-autofill { -webkit-text-fill-color:#fff; -webkit-box-shadow:0 0 0 1000px #161616 inset; caret-color:#fff; }
+      .field label { position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#8c8c8c; font-size:16px; pointer-events:none; transition:transform .15s ease, font-size .15s ease, top .15s ease; }
+      .field input:focus + label, .field input:not(:placeholder-shown) + label { top:14px; transform:translateY(0); font-size:11px; }
+      .toggle-eye { position:absolute; right:10px; top:50%; transform:translateY(-50%); background:transparent; border:0; color:#fff; cursor:pointer; font-size:16px; padding:6px; opacity:.85; }
+      .toggle-eye:hover { opacity:1; }
+
+      .btn-continue { width:100%; height:48px; background:var(--red); color:#fff; border:0; border-radius:4px; font-weight:700; font-size:16px; cursor:pointer; margin-top:8px; }
+      .btn-continue:hover { background:var(--red-h); }
+
+      .signup-line { margin-top:18px; color:#b3b3b3; font-size:14px; }
+      .signup-line a { color:#fff; text-decoration:none; font-weight:600; }
+      .signup-line a:hover { text-decoration:underline; }
+      .message { min-height:20px; margin:12px 0 0; color:#fca5a5; font-size:14px; }
+      .message.success { color:#86efac; }
+
+      /* ===== FOOTER (identical to dashboard) ===== */
+      footer { border-top:1px solid #222; padding:clamp(16px,3vh,35px) clamp(18px,4%,48px) clamp(14px,2.5vh,30px); color:#737373; max-width:1175px; margin:0 auto; width:100%; font-size:13px; }
+      .footer-social { display:flex; gap:22px; margin-bottom:clamp(6px,1vh,10px); font-size:17.5px; }
+      .footer-social a { color:#e5e5e5; }
+      .footer-links { display:grid; grid-template-columns:repeat(4,1fr); gap:14px 20px; }
+      .footer-links a { color:#737373; text-decoration:none; font-size:13px; }
+      .footer-links a:hover { text-decoration:underline; }
+      .footer-copy { margin-top:clamp(12px,2vh,24px); font-size:12px; }
+
+      @media (max-width: 880px) {
+        .nav { padding:12px 16px; }
+        .logo { height:2rem; }
+        .footer-links { grid-template-columns:repeat(2,1fr); }
+        .signin h1 { font-size:26px; }
+      }
+      @media (max-width: 380px) {
+        .nav { padding:10px 12px; }
+        .logo { height:1.7rem; }
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="nav">
+      <div class="nav-left">
+        <a href="/"><img src="/static/logo.png" alt="LoyaltyLens" class="logo" /></a>
+      </div>
+    </nav>
+    <div class="nav-divider"></div>
+
+    <main>
+      <div class="signin">
+        <h1>Get started with a new account</h1>
+        <p class="subtitle">Or enter your info to sign in.</p>
+
+        <form id="signup-form" autocomplete="on" novalidate>
+          <div class="field">
+            <input id="email" name="email" type="email" placeholder=" " required />
+            <label for="email">Email address</label>
+          </div>
+          <div class="field">
+            <input id="password" name="password" type="password" placeholder=" " required />
+            <label for="password">Password</label>
+            <button type="button" class="toggle-eye" data-target="password" aria-label="Show password">
+              <i class="fa-regular fa-eye"></i>
+            </button>
+          </div>
+          <div class="field">
+            <input id="confirm-password" name="confirm-password" type="password" placeholder=" " required />
+            <label for="confirm-password">Confirm password</label>
+            <button type="button" class="toggle-eye" data-target="confirm-password" aria-label="Show password">
+              <i class="fa-regular fa-eye"></i>
+            </button>
+          </div>
+          <button type="submit" class="btn-continue">Get Started</button>
+          <p class="message" id="auth-message"></p>
+          <p class="signup-line">Already have an account? <a href="/signin">Sign In</a></p>
+        </form>
+      </div>
+    </main>
+
+    <footer>
+      <div class="footer-social">
+        <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+        <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+        <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+        <a href="#" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+      </div>
+      <div class="footer-links">
+        <a href="#">About Us</a><a href="#">Help Center</a><a href="#">Members</a><a href="#">Professor</a>
+        <a href="#">Documentation</a><a href="#">FAQ</a><a href="#">Contact Us</a>
+      </div>
+      <div class="footer-copy">© 2025-2026 LoyaltyLens</div>
+    </footer>
+
+    <script>
+      const _qe = new URLSearchParams(location.search).get('email');
+      if (_qe) document.getElementById('email').value = _qe;
+
+      document.querySelectorAll('.toggle-eye').forEach(tog => {
+        tog.addEventListener('click', () => {
+          const input = document.getElementById(tog.dataset.target);
+          const show = input.type === 'password';
+          input.type = show ? 'text' : 'password';
+          tog.querySelector('i').className = show ? 'fa-regular fa-eye-slash' : 'fa-regular fa-eye';
+          tog.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+        });
+      });
+
+      document.getElementById('signup-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirm-password').value;
+        const button = event.currentTarget.querySelector('.btn-continue');
+        const message = document.getElementById('auth-message');
+        message.className = 'message';
+        message.textContent = '';
+        if (password !== confirmPassword) {
+          message.textContent = 'Passwords do not match.';
+          return;
+        }
+        button.disabled = true;
+        button.textContent = 'Creating account...';
+        try {
+          const response = await fetch('/auth/signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password }),
+          });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.detail || 'Sign up failed.');
+          if (data.confirmed) {
+            location.href = '/dashboard';
+            return;
+          }
+          message.className = 'message success';
+          message.textContent = 'Account created. Check your email to confirm, then sign in.';
+        } catch (error) {
+          message.textContent = error.message;
+        } finally {
+          button.disabled = false;
+          button.textContent = 'Get Started';
+        }
+      });
+    </script>
+  </body>
+</html>
