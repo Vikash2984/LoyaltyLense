@@ -1,14 +1,16 @@
 import io
+import os
 from pathlib import Path
 from typing import Literal
 
+import httpx
 import joblib
 import numpy as np
 import pandas as pd
 import shap
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, Request, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -20,6 +22,14 @@ from pydantic import BaseModel, Field
 ROOT_DIR = Path(__file__).resolve().parent.parent
 ARTIFACT_DIR = Path(__file__).resolve().parent / "artifacts"
 STATIC_DIR = ROOT_DIR / "static"
+SUPABASE_URL = os.getenv("SUPABASE_URL", "").rstrip("/")
+for suffix in ("/rest/v1", "/auth/v1"):
+    if SUPABASE_URL.endswith(suffix):
+        SUPABASE_URL = SUPABASE_URL[: -len(suffix)]
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "")
+ACCESS_COOKIE = "ll_access_token"
+REFRESH_COOKIE = "ll_refresh_token"
+COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 
 REQUIRED_COLUMNS = [
     "age",
@@ -64,6 +74,11 @@ class CustomerInput(BaseModel):
     number_of_profiles: int = Field(..., ge=0, le=5)
     avg_watch_time_per_day: float = Field(..., ge=0)
     favorite_genre: Literal["Action", "Sci-Fi", "Drama", "Horror", "Romance", "Comedy", "Documentary"]
+
+
+class AuthInput(BaseModel):
+    email: str
+    password: str
 
 
 # ---------------------------------------------------------------------------
@@ -167,13 +182,132 @@ def predict_dataframe(df: pd.DataFrame) -> tuple[pd.DataFrame, np.ndarray, np.nd
     return x_data, predictions, probabilities
 
 
+def require_supabase_config() -> None:
+    if not SUPABASE_URL or not SUPABASE_ANON_KEY:
+        raise HTTPException(
+            status_code=500,
+            detail="Supabase is not configured. Set SUPABASE_URL and SUPABASE_ANON_KEY.",
+        )
+
+
+def set_session_cookies(response: Response, session: dict) -> None:
+    response.set_cookie(
+        ACCESS_COOKIE,
+        session["access_token"],
+        max_age=COOKIE_MAX_AGE,
+        httponly=True,
+        secure=False,
+        samesite="lax",
+    )
+    if session.get("refresh_token"):
+        response.set_cookie(
+            REFRESH_COOKIE,
+            session["refresh_token"],
+            max_age=COOKIE_MAX_AGE,
+            httponly=True,
+            secure=False,
+            samesite="lax",
+        )
+
+
+def clear_session_cookies(response: Response) -> None:
+    response.delete_cookie(ACCESS_COOKIE)
+    response.delete_cookie(REFRESH_COOKIE)
+
+
+async def supabase_auth(method: str, path: str, *, token: str | None = None, json: dict | None = None) -> dict:
+    require_supabase_config()
+    headers = {"apikey": SUPABASE_ANON_KEY}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    async with httpx.AsyncClient(timeout=15) as client:
+        response = await client.request(method, f"{SUPABASE_URL}/auth/v1{path}", headers=headers, json=json)
+    if response.status_code >= 400:
+        try:
+            detail = response.json().get("msg") or response.json().get("error_description") or response.json()
+        except ValueError:
+            detail = response.text
+        raise HTTPException(status_code=response.status_code, detail=detail)
+    return response.json()
+
+
+async def current_user(request: Request) -> tuple[dict | None, dict | None]:
+    access_token = request.cookies.get(ACCESS_COOKIE)
+    if access_token:
+        try:
+            return await supabase_auth("GET", "/user", token=access_token), None
+        except HTTPException:
+            pass
+
+    refresh_token = request.cookies.get(REFRESH_COOKIE)
+    if not refresh_token:
+        return None, None
+
+    try:
+        session = await supabase_auth("POST", "/token?grant_type=refresh_token", json={"refresh_token": refresh_token})
+        return session.get("user"), session
+    except HTTPException:
+        return None, None
+
+
+async def require_user(request: Request) -> tuple[dict, dict | None]:
+    user, session = await current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Please sign in to continue.")
+    return user, session
+
+
 # ---------------------------------------------------------------------------
 # 5. API routes
 # ---------------------------------------------------------------------------
 
 @app.get("/", include_in_schema=False)
+async def root(request: Request):
+    user, session = await current_user(request)
+    if user:
+        response = RedirectResponse("/dashboard", status_code=303)
+        if session:
+            set_session_cookies(response, session)
+        return response
+    return FileResponse(STATIC_DIR / "index.html")
+
+
+@app.get("/home", include_in_schema=False)
 def home():
     return FileResponse(STATIC_DIR / "index.html")
+
+
+@app.get("/signin", include_in_schema=False)
+async def signin_page(request: Request):
+    user, session = await current_user(request)
+    if user:
+        response = RedirectResponse("/dashboard", status_code=303)
+        if session:
+            set_session_cookies(response, session)
+        return response
+    return FileResponse(STATIC_DIR / "signin.html")
+
+
+@app.get("/signup", include_in_schema=False)
+async def signup_page(request: Request):
+    user, session = await current_user(request)
+    if user:
+        response = RedirectResponse("/dashboard", status_code=303)
+        if session:
+            set_session_cookies(response, session)
+        return response
+    return FileResponse(STATIC_DIR / "signup.html")
+
+
+@app.get("/dashboard", include_in_schema=False)
+async def dashboard_page(request: Request):
+    user, session = await current_user(request)
+    if not user:
+        return RedirectResponse("/signin", status_code=303)
+    response = FileResponse(STATIC_DIR / "dashboard.html")
+    if session:
+        set_session_cookies(response, session)
+    return response
 
 
 @app.get("/health")
@@ -189,8 +323,50 @@ def metadata():
     }
 
 
+@app.get("/auth/me")
+async def auth_me(request: Request):
+    user, session = await current_user(request)
+    if not user:
+        return JSONResponse({"user": None})
+    response = JSONResponse({"user": {"id": user.get("id"), "email": user.get("email")}})
+    if session:
+        set_session_cookies(response, session)
+    return response
+
+
+@app.post("/auth/signup")
+async def auth_signup(payload: AuthInput):
+    session = await supabase_auth("POST", "/signup", json=payload.model_dump())
+    response = JSONResponse({"user": session.get("user"), "confirmed": bool(session.get("access_token"))})
+    if session.get("access_token"):
+        set_session_cookies(response, session)
+    return response
+
+
+@app.post("/auth/signin")
+async def auth_signin(payload: AuthInput):
+    session = await supabase_auth("POST", "/token?grant_type=password", json=payload.model_dump())
+    response = JSONResponse({"user": session.get("user")})
+    set_session_cookies(response, session)
+    return response
+
+
+@app.post("/auth/signout")
+async def auth_signout(request: Request):
+    access_token = request.cookies.get(ACCESS_COOKIE)
+    if access_token:
+        try:
+            await supabase_auth("POST", "/logout", token=access_token)
+        except HTTPException:
+            pass
+    response = JSONResponse({"ok": True})
+    clear_session_cookies(response)
+    return response
+
+
 @app.post("/predict")
-def predict_single(customer: CustomerInput):
+async def predict_single(customer: CustomerInput, request: Request):
+    await require_user(request)
     input_df = pd.DataFrame([customer.model_dump()])
     x_data, predictions, probabilities = predict_dataframe(input_df)
 
@@ -224,7 +400,8 @@ def predict_single(customer: CustomerInput):
 
 
 @app.post("/predict-bulk")
-async def predict_bulk(file: UploadFile = File(...)):
+async def predict_bulk(request: Request, file: UploadFile = File(...)):
+    await require_user(request)
     filename = (file.filename or "").lower()
     content = await file.read()
 
