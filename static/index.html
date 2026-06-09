@@ -29,6 +29,7 @@
       .browse-menu::before { content:""; position:absolute; top:-7px; right:14px; width:12px; height:12px; background:rgba(0,0,0,0.9); border-left:1px solid #282828; border-top:1px solid #282828; transform:rotate(45deg); }
       .browse-menu a { display:block; color:#b3b3b3; text-decoration:none; padding:10px 16px; text-align:center; font-size:14px; }
       .browse-menu a:hover { color:#fff; }
+      .browse-menu a.active { color:#fff; font-weight:700; }
       .hidden { display:none; }
       .nav-divider { height:2px; background:linear-gradient(to right,#000,#e50914,#b81d24,#000); position:fixed; top:68px; left:0; right:0; z-index:49; opacity:0; transition:opacity .35s ease; }
       .nav.scrolled + .nav-divider { opacity:1; }
@@ -347,7 +348,7 @@
             <div class="browse-wrap">
               <button class="browse-btn" id="browse-btn" type="button">Browse <span class="caret">&#9662;</span></button>
               <div class="browse-menu hidden" id="browse-menu">
-                <a href="/home">Home</a><a href="/dashboard">Dashboard</a><a href="#">About</a><a href="#">Research</a><a href="#">Help</a>
+                <a href="/home" class="active">Home</a><a href="/dashboard">Dashboard</a><a href="#">About</a><a href="#">Research</a><a href="#">Help</a>
               </div>
             </div>
           </div>
@@ -364,6 +365,7 @@
         .then((response) => response.ok ? response.json() : { user:null })
         .then((data) => {
           if (data.user) {
+            if (!sessionStorage.getItem('introPlayed') && (location.pathname === '/' || location.pathname === '/home')) { location.replace('/dashboard'); return; }
             document.getElementById('intro')?.remove();
             applyLoggedInNav();
             document.documentElement.classList.remove('auth-pending','intro-active');
