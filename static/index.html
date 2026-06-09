@@ -33,6 +33,9 @@
       .nav-divider { height:2px; background:linear-gradient(to right,#000,#e50914,#b81d24,#000); position:fixed; top:68px; left:0; right:0; z-index:49; opacity:0; transition:opacity .35s ease; }
       .nav.scrolled + .nav-divider { opacity:1; }
       body.logged-in .cta-copy, body.logged-in .hero-form { display:none; }
+      /* Pre-auth gate: avoid flashing hero email/CTA or homepage before intro */
+      html.auth-pending body > *:not(#intro) { visibility:hidden; }
+      html.intro-active #intro { display:flex !important; }
 
       /* ===== HERO ===== */
       .hero { position:relative; min-height:100vh; display:flex; align-items:center; justify-content:center; text-align:center; padding:90px 4% 90px; background:#000 url('/static/hero.png') center/cover no-repeat; }
@@ -95,6 +98,7 @@
       @media (max-width: 880px) {
         .footer-links { grid-template-columns:repeat(2,1fr); }
         .nav { padding:12px 16px; gap:8px; }
+        .nav-divider { top:56px; }
         .nav-left { gap:4px; min-width:0; flex:1; }
         .logo { height:2rem; }
         .nav-tabs { display:none; }
@@ -179,6 +183,7 @@
       @media (max-width:520px){ #intro netflixintro{ --stage-size:clamp(168px,72vmin,280px); } }
       @media (prefers-reduced-motion:reduce){ #intro netflixintro,#intro netflixintro *,#intro netflixintro *::before { animation-duration:.001s !important; animation-delay:0s !important; } }
     </style>
+    <script>(function(){var d=document.documentElement;d.classList.add('auth-pending');var p=sessionStorage.getItem('introPlayed'),r=(performance.getEntriesByType('navigation')[0]||{}).type==='reload';if(!p&&!r)d.classList.add('intro-active');})();</script>
   </head>
   <body>
     <!-- ===== INTRO OVERLAY (plays only on first visit per session) ===== -->
@@ -302,11 +307,11 @@
         if (!intro) return;
         const played = sessionStorage.getItem('introPlayed');
         const isReload = performance.getEntriesByType('navigation')[0]?.type === 'reload';
-        if (played || isReload) { intro.remove(); return; }
+        if (played || isReload) { intro.remove(); document.documentElement.classList.remove('auth-pending','intro-active'); return; }
         intro.classList.add('playing');
         sessionStorage.setItem('introPlayed', '1');
         // Animation timing: zoom-in 3.5s with .5s delay -> fade overlay as L expands past viewport
-        setTimeout(() => intro.classList.add('done'), 3600);
+        setTimeout(() => { document.documentElement.classList.remove('auth-pending','intro-active'); intro.classList.add('done'); }, 3600);
         setTimeout(() => intro.remove(), 4200);
       }
 
@@ -361,6 +366,7 @@
           if (data.user) {
             document.getElementById('intro')?.remove();
             applyLoggedInNav();
+            document.documentElement.classList.remove('auth-pending','intro-active');
           } else {
             playIntroForPublicHome();
           }
